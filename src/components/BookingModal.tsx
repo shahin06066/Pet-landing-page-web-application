@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { gsap } from "gsap";
 
 export type BookingModalProps = {
-  isOpen: boolean;
   onClose: () => void;
   preselectedPlan?: string | null;
   preselectedService?: string | null;
@@ -25,13 +24,14 @@ const PLANS = ["Basic", "Premium", "Elite"];
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-export default function BookingModal({ isOpen, onClose, preselectedPlan, preselectedService }: BookingModalProps) {
+export default function BookingModal({ onClose, preselectedPlan, preselectedService }: BookingModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
   const [status, setStatus] = useState<Status>("idle");
-  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [errorMsg, setErrorMsg] = useState("");
 
+  // Fresh state on every open — the parent only mounts this modal when it's visible
   const [form, setForm] = useState({
     ownerName: "",
     email: "",
@@ -44,42 +44,25 @@ export default function BookingModal({ isOpen, onClose, preselectedPlan, presele
     notes: "",
   });
 
-  // Sync preselected values when modal opens
+  // Entrance animation (runs once, when the modal is opened)
   useEffect(() => {
-    if (isOpen) {
-      setForm((prev) => ({
-        ...prev,
-        plan: preselectedPlan || prev.plan,
-        service: preselectedService || prev.service,
-      }));
+    document.body.style.overflow = "hidden";
+
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      if (overlayRef.current && modalRef.current) {
+        gsap.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+        gsap.fromTo(
+          modalRef.current,
+          { y: 40, opacity: 0, scale: 0.95 },
+          { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.4)" }
+        );
+      }
     }
-  }, [isOpen, preselectedPlan, preselectedService]);
 
-  // Animate open/close
-  useEffect(() => {
-    if (!overlayRef.current || !modalRef.current) return;
-
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      gsap.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3 });
-      gsap.fromTo(
-        modalRef.current,
-        { y: 40, opacity: 0, scale: 0.95 },
-        { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.4)" }
-      );
-    } else {
+    return () => {
       document.body.style.overflow = "";
-      gsap.to(modalRef.current, { y: 20, opacity: 0, scale: 0.95, duration: 0.2 });
-      gsap.to(overlayRef.current, {
-        opacity: 0,
-        duration: 0.25,
-        onComplete: () => {
-          setStatus("idle");
-          setErrorMsg("");
-        },
-      });
-    }
-  }, [isOpen]);
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -111,24 +94,7 @@ export default function BookingModal({ isOpen, onClose, preselectedPlan, presele
   const handleClose = () => {
     if (status === "submitting") return;
     onClose();
-    if (status === "success") {
-      setTimeout(() => {
-        setForm({
-          ownerName: "",
-          email: "",
-          phone: "",
-          petName: "",
-          petType: "Dog",
-          service: "",
-          plan: "",
-          preferredDate: "",
-          notes: "",
-        });
-      }, 300);
-    }
   };
-
-  if (!isOpen) return null;
 
   return (
     <div

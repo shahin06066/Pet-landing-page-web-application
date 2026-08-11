@@ -54,24 +54,4 @@
     background: #fbbf24;
     color: #7c2d12;
   }
-
-  /* Display heading utility */
-  .font-display {
-    font-family: var(--font-playfair), ui-serif, Georgia, serif;
-  }
-}
-
-/* Subtle animated gradient background */
-@keyframes gradient-shift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 8s ease infinite;
 }

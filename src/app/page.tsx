@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import BookingModal from "@/components/BookingModal";
 import ContactSection from "@/components/ContactSection";
+
+// Only load the booking form when someone actually opens it
+const BookingModal = dynamic(() => import("@/components/BookingModal"), {
+  ssr: false,
+});
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,6 +30,22 @@ export default function Home() {
   };
 
   useEffect(() => {
+    // Navbar scroll effect
+    const navbar = document.querySelector(".navbar");
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        navbar?.classList.add("scrolled");
+      } else {
+        navbar?.classList.remove("scrolled");
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+
+    // Skip decorative animations for users who prefer reduced motion
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return () => window.removeEventListener("scroll", handleScroll);
+    }
+
     // Hero animations
     const heroTl = gsap.timeline();
     heroTl.fromTo(
@@ -124,16 +145,6 @@ export default function Home() {
       ease: "sine.inOut",
     });
 
-    // Navbar scroll effect
-    const navbar = document.querySelector(".navbar");
-    const handleScroll = () => {
-      if (window.scrollY > 50) {
-        navbar?.classList.add("scrolled");
-      } else {
-        navbar?.classList.remove("scrolled");
-      }
-    };
-    window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -234,6 +245,10 @@ export default function Home() {
             <img
               src="/images/hero-pet.jpg"
               alt="Happy golden retriever"
+              width={1200}
+              height={800}
+              fetchPriority="high"
+              decoding="async"
               className="relative rounded-3xl shadow-2xl object-cover w-full h-[600px]"
             />
           </div>
@@ -301,6 +316,10 @@ export default function Home() {
                 <img
                   src={image.src}
                   alt={image.alt}
+                  width={600}
+                  height={400}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
@@ -536,13 +555,14 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Booking Modal */}
-      <BookingModal
-        isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
-        preselectedPlan={preselectedPlan}
-        preselectedService={preselectedService}
-      />
+      {/* Booking Modal — only mounted (and loaded) when opened */}
+      {isBookingOpen && (
+        <BookingModal
+          onClose={() => setIsBookingOpen(false)}
+          preselectedPlan={preselectedPlan}
+          preselectedService={preselectedService}
+        />
+      )}
     </div>
   );
 }

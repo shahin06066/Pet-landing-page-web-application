@@ -24,6 +24,7 @@ export default function ContactSection() {
 
   useEffect(() => {
     if (!sectionRef.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     gsap.fromTo(
       ".contact-info-card",

@@ -1,20 +1,16 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+// Keep one pool across hot-reloads in dev
 const globalForDb = globalThis as typeof globalThis & {
-  __arenaNextJsPostgresqlPool?: Pool;
+  __pgPool?: Pool;
 };
 
 let dbInstance: NodePgDatabase | undefined;
 
-/**
- * Creates the database connection lazily on first use.
- *
- * Importing this module never throws — even without `DATABASE_URL`.
- * The pool is only created (and `DATABASE_URL` required) when an API
- * route actually talks to the database, which keeps `next build` and
- * static rendering working in environments without a database.
- */
+// The pool is created lazily so importing this module never throws,
+// even without DATABASE_URL — that keeps `next build` and static
+// rendering working in environments without a database.
 function getDb(): NodePgDatabase {
   if (!dbInstance) {
     const databaseUrl = process.env.DATABASE_URL;
@@ -23,13 +19,13 @@ function getDb(): NodePgDatabase {
     }
 
     const pool =
-      globalForDb.__arenaNextJsPostgresqlPool ??
+      globalForDb.__pgPool ??
       new Pool({
         connectionString: databaseUrl,
       });
 
     if (process.env.NODE_ENV !== "production") {
-      globalForDb.__arenaNextJsPostgresqlPool = pool;
+      globalForDb.__pgPool = pool;
     }
 
     dbInstance = drizzle(pool);
@@ -38,13 +34,9 @@ function getDb(): NodePgDatabase {
   return dbInstance;
 }
 
-/**
- * Lazy `db` export — keeps the same API (`db.insert(...)`, `db.execute(...)`)
- * used by the API routes, but defers connection setup until first access.
- */
+// Proxy that defers connection setup until a route actually touches the db
 export const db = new Proxy({} as NodePgDatabase, {
   get: (_target, prop) => {
-    // Don't initialize the DB for symbol lookups (inspection, thenables, etc.)
     if (typeof prop === "symbol") return undefined;
     const instance = getDb();
     const value = (instance as unknown as Record<string, unknown>)[prop];
