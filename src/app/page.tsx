@@ -531,7 +531,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Pawfect. All rights reserved. Made with ❤️ for pets.</p>
+            <p>&copy; 2026 Pawfect. All rights reserved. Made with ❤️ for pets.</p>
           </div>
         </div>
       </footer>
