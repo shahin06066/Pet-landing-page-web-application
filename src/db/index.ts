@@ -44,8 +44,10 @@ function getDb(): NodePgDatabase {
  */
 export const db = new Proxy({} as NodePgDatabase, {
   get: (_target, prop) => {
+    // Don't initialize the DB for symbol lookups (inspection, thenables, etc.)
+    if (typeof prop === "symbol") return undefined;
     const instance = getDb();
-    const value = (instance as unknown as Record<string, unknown>)[prop as string];
+    const value = (instance as unknown as Record<string, unknown>)[prop];
     return typeof value === "function" ? value.bind(instance) : value;
   },
 });
